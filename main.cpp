@@ -42,31 +42,37 @@ void hMain()
 
         int distlewy = senslewy.getDistance();
         int distprawy = senslewy.getDistance();
-        while ((distlewy < maxstol) && (distprawy < maxstol)) //pojazd znajduje sie na stole, czujniki nie wykryly krawedzi
-        {
+        switch (true) {
+        case (distlewy < maxstol && distprawy < maxstol): // pojazd nie wykryl krawedzi stołu, jedzie prosto
+            while (true) {
             prosto(100,100);
-        } 
-        while ((distlewy < maxstol) && (distprawy > maxstol)) //prawy czujnik wykryl podloge, lewy nie, pojazd jest za bardzo w prawo
-        {
+            if (distlewy >= maxstol || distprawy >= maxstol) break;
+            }
+            break;
+        case (distlewy < maxstol && distprawy > maxstol): // pojazd wykrył prawą krawędź stołu
+            while (true) {
             prosto(200,-100); //cofamy pojazd by nie spadł przy skręcaniu
             skretblok(100, -100); //pojazd skreca, SPRAWDZIC CZY W DOBRA STRONE
             jazda(100,100);
             prosto(0,0); //słuzy do wyprostowania kół pojazdu
-
-        } 
-        while ((distlewy > maxstol) && (distprawy < maxstol)) //lewy czujnik wykryl podloge, prawy nie, pojazd jest za bardzo w lewo
-        {
+            if (distlewy >= maxstol && distprawy <= maxstol) break;
+            }
+            break;
+        case (distlewy > maxstol && distprawy < maxstol): // pojazd wykrył lewą krawędź stołu
+            while (true) {
             prosto(200,-100); //cofamy pojazd by nie spadł przy skręcaniu
             skretblok(100, 100); //pojazd skreca, SPRAWDZIC CZY W DOBRA STRONE
             jazda(100,100);
             prosto(0,0); //słuzy do wyprostowania kół pojazdu
-
-        } 
-        while ((distlewy > maxstol) && (distprawy > maxstol)) //pojazd wykryl prawidlowe ustawienie nad krawedzia stolu
-        {
-            //procedura wysuwania mostu
-
-        } 
+            if (distlewy <= maxstol && distprawy >= maxstol) break;
+            }
+            break;
+        case (distlewy > maxstol && distprawy > maxstol):
+            //pojazd wykrył prawidłowe ustawienie nad krawędzią stołu
+            break;
+        default:
+            break;
+        }
 
      
         }
