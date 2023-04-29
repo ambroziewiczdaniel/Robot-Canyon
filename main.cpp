@@ -11,7 +11,7 @@ using namespace hModules;
 DistanceSensor sensprawy(hSens1);
 DistanceSensor senslewy(hSens5);
 int distprawy = 1;
-int distleflaswy = 1; //musialem zadeklarowac oba tutaj, poniewaz uzywam ich w void
+int distlewy = 1; //musialem zadeklarowac oba tutaj, poniewaz uzywam ich w void
 int maxstol = 10; //MAKSYMALNA WYKRYWANA ODLEGLOSC STOLU OD POJAZDU, ZMIENIĆ, ZALEŻNE OD WYSOKOŚCI POJAZDU
 int dlugoscmostu = 3000; // SPRAWDZIC PRZY JAKIEJ LICZBIE POJAZD PRZEJEZDZA CALY MOST
 int maxstolmost = 15; //wysokosc przy ktorej most widzi stoł
