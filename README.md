@@ -14,3 +14,4 @@ Sterowanie radiowe: robot może być sterowany przez użytkownika za pomocą mod
 
 Aplikacja mobilna: do sterowania robotem na odległość może być użyta aplikacja mobilna na system Android.
 
+![robot1](https://github.com/ambroziewiczdaniel/Robot-Canyon/assets/31101222/4a430944-ea01-44d8-845e-4a20459d84b8)
