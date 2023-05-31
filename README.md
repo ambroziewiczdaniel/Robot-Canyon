@@ -13,3 +13,4 @@ Zautomatyzowane działanie: Robot został zaprogramowany w taki sposób, że mo�
 Sterowanie radiowe: robot może być sterowany przez użytkownika za pomocą modułu Bluetooth. Użytkownik może również zdalnie włączyć tryb autonomiczny.
 
 Aplikacja mobilna: do sterowania robotem na odległość może być użyta aplikacja mobilna na system Android.
+
