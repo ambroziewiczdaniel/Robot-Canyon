@@ -4,128 +4,208 @@
 
 using namespace hModules;
 // Schemat podpinania:
-// Silnik napędowy - hMot1
+// Silnik napędowy - hMot3
 // Silnik skręcający - hMot2
-// Silnik podnoszący - hMot3
+// Silnik podnoszący - hMot1
 // Silnik przesuwający most - hMot4
 // Czujnik prawy - sensprawy(hSens1);
 // Czujnik lewy - senslewy(hSens5);
-DistanceSensor sensprawy(hSens1);
-DistanceSensor senslewy(hSens5);
+DistanceSensor sensprawy(hSens5);
+DistanceSensor senslewy(hSens1);
 DistanceSensor sensmost(hSens3);
-bool state2 = 0;
+int wykryto = 0;
+int skrettak = 0;
+bool state1 = 0;
 int state3 = 0;
 int distprawy = 1;
-int distlewy = 1; //musialem zadeklarowac oba tutaj, poniewaz uzywam ich w void
-int maxstol = 10; //MAKSYMALNA WYKRYWANA ODLEGLOSC STOLU OD POJAZDU, ZMIENIĆ, ZALEŻNE OD WYSOKOŚCI POJAZDU
-int dlugoscmostu = 3000; // SPRAWDZIC PRZY JAKIEJ LICZBIE POJAZD PRZEJEZDZA CALY MOST
-int maxstolmost = 15; //wysokosc przy ktorej most widzi stoł
-void skretblok(int ilosc, int moc) {
-  hMot2.rotRel(ilosc, moc, true, INFINITE);
-}
-void skret(int ilosc, int moc) {
-  hMot2.rotRel(ilosc, moc, false, INFINITE);
-}
-void jazda(int ilosc, int moc) {
-  hMot1.rotRel(ilosc, moc, false, INFINITE);
-}
-void jazdablok(int ilosc, int moc) {
-  hMot1.rotRel(ilosc, moc, true, INFINITE);
-}
-void prosto(int ilosc, int moc) {
-  hMot2.rotAbs(0, 200, true, INFINITE); // SPRAWDZIC DLA JAKIEJ "ILOSCI" POJAZD JEDZIE PROSTO, niekoniecznie 0 wyprostuje kola pojazdu
-  hMot1.rotRel(ilosc, moc, false, INFINITE);
-}
-void podnoszenie(int ilosc, int moc) {
-  hMot3.rotRel(ilosc, moc, true, INFINITE);
-}
+int distlewy = 1;
+int distmost = 1;
+int maxstol = 10; //MAKSYMALNA WYKRYWANA ODLEGLOSC STOLU OD POJAZDU
+int dlugoscmostu = 105000; // długość mostu w tickach silnika
+int maxstolmost = 28; //wysokosc przy ktorej most widzi stoł
+int brakskretu = 0;
 void przesuwanie(int ilosc, int moc) {
+  hMot1.setPower(0); //wyłaczanie silnika napędowego
+  hMot2.rotAbs(0, 500); //prostowanie kół
+
   Serial.printf("Wysuwanie mostu.\n");
-  hMot4.rotRel((dlugoscmostu/2), 900, true, INFINITE); //sprawdzic czy dlugosc calego mostu jest osiagnieta
-  Serial.printf("Koniec wysuwania mostu\n");
-  Serial.printf("Sprawdzamy, czy wykryto stół.\n");
+  DistanceSensor sensprawy(hSens5); //pobieranie danych z czujników
+  DistanceSensor senslewy(hSens1);
   DistanceSensor sensmost(hSens3);
+  int distprawy = sensprawy.getDistance();
+  int distlewy = senslewy.getDistance();
   int distmost = sensmost.getDistance();
-  Serial.printf("Dystans:%d\r\n", distmost);
-  if (distlewy < maxstolmost) {
-    Serial.printf("Wykryto stół.\n");
-    Serial.printf("Podnosimy pojazd.\n");
-    hMot3.rotRel(1000, 800, true);
-    Serial.printf("Pojazd podniesiony.\n");
-    Serial.printf("Przejazd pojazdu po moście.\n");
-    hMot4.rotRel((-(dlugoscmostu)), 800, true, INFINITE); //przejazd pojazdu po moscie
-    Serial.printf("Pojazd przejechał po moście.\n");
-    Serial.printf("Opuszczanie pojazdu.\n");
-    hMot3.rotRel(-1000, 300, true);
-    Serial.printf("Przeciąganie mostu.\n");
-    hMot4.rotRel(((-dlugoscmostu) / 2), 800, true, INFINITE);
-
-  } else //nie wykryto stołu, cofamy most
+  Serial.printf("Prawy:%d\r\n", distprawy);
+  Serial.printf("Lewy:%d\r\n", distlewy);
+  Serial.printf("Most:%d\r\n", distmost);
+  if (distmost > maxstolmost) //jeżeli czujnik na moście nie wykrywa stołu
   {
-    Serial.printf("Nie wykryto stołu.\n");
-    Serial.printf("Przeciąganie mostu.\n");
-    hMot4.rotRel((-(dlugoscmostu)), 900, true, INFINITE);
-    Serial.printf("KONIEC PROCEDURY.\n");
-
-    exit(1); //pojazd pozostaje w spoczynku
+    Serial.printf("Nie wykryto stołu\n");
+    hMot1.setPower(0);
+    hMot2.setPower(0);
+    hMot3.setPower(0);
+    hMot4.setPower(0);
+    exit(1);
 
   }
+  if (distmost <= maxstolmost) //jeżeli czujnik na moście wykryje stół
+  {
+
+    Serial.printf("Wykryto stół!\n");
+    Serial.printf("%d\n", distmost);
+    hMot4.rotAbs(-dlugoscmostu, 800, true); //wysuwamy most
+
+    Serial.printf("Podnosimy pojazd.\n");
+    hMot3.rotRel(12000, 800, true);
+    Serial.printf("Pojazd podniesiony.\n");
+    Serial.printf("Przejazd pojazdu po moście.\n");
+    hMot4.rotRel((30000), 800, true, INFINITE); //przejazd pojazdu po moscie
+    Serial.printf("Pojazd przejechał po moście.\n");
+    while (wykryto < 1) //jeżeli żaden czujnik nie wykrył mostu
+    {
+      hMot4.rotRel(10000, 900, true);
+      hMot1.setPower(100);
+      distprawy = sensprawy.getDistance();
+      distlewy = senslewy.getDistance();
+      if (distprawy < maxstolmost) {
+        wykryto += 1;
+      }
+      if (distlewy < maxstolmost) //jeżeli czujniki wykryją most, zmienna > 0
+      {
+        wykryto += 1;
+      }
+    }
+    wykryto = 0;
+    hMot4.setPower(0);
+    hMot1.setPower(0);
+    hMot4.rotRel(108000, 900, true); //przesuwamy pojazd o jego długość po moście
+    Serial.printf("Opuszczanie pojazdu.\n");
+    hMot3.rotRel(-12000, 800, true);
+    Serial.printf("Przeciąganie mostu.\n");
+    hMot4.rotAbs(0, 900, true);
+    brakskretu += 1; //zmienna powodująca inne zachowanie skręcania przy pierwszym skręcie po pokonaniu mostu
+  }
+
 }
 void hMain() {
   while (true) {
-    bool state1 = hBtn1.isPressed();
+    DistanceSensor sensprawy(hSens5);
+    DistanceSensor senslewy(hSens1);
+    DistanceSensor sensmost(hSens3);
+    int distprawy = sensprawy.getDistance();
+    int distlewy = senslewy.getDistance();
+    int distmost = sensmost.getDistance();
+    Serial.printf("Prawy:%d\r\n", distprawy);
+    Serial.printf("Lewy:%d\r\n", distlewy);
+    Serial.printf("Most:%d\r\n", distmost);
+    bool state1 = hBtn1.isPressed(); //bool zmieniający wartość gdy przycisk zostaje wcisniety
     Serial.printf("%d/n", state1);
-    if (state1 == true) {
+    if (state1 == true) { //jeżeli przycisk zostaje wciśnięty, zmienna state3 > 0
       state3 += 1;
     }
 
-    if (state3 > 0) {
+    if (state3 > 0) { //jeżeli zmienna state3 > 0, rozpoczynamy procedurę autonomiczną
       {
 
         for (;;) {
-          printf("Start!\n");
-          DistanceSensor sensprawy(hSens1);
-          DistanceSensor senslewy(hSens5);
+          DistanceSensor sensprawy(hSens5);
+          DistanceSensor senslewy(hSens1);
+          DistanceSensor sensmost(hSens3);
           int distprawy = sensprawy.getDistance();
           int distlewy = senslewy.getDistance();
+          int distmost = sensmost.getDistance();
           Serial.printf("Prawy:%d\r\n", distprawy);
           Serial.printf("Lewy:%d\r\n", distlewy);
+          Serial.printf("Most:%d\r\n", distmost);
 
           if (distlewy < maxstol && distprawy < maxstol) // pojazd nie wykryl krawedzi stołu, jedzie prosto
           {
+            skrettak = 0; //zmienna odpowiadająca za stopień sketu kół
 
             Serial.printf("Prosto. \n ");
+            hMot1.setPower(200);
             hMot2.rotAbs(0, 300, true);
-            hMot1.setPower(600);
             sys.delay(400);
 
           }
           if (distlewy < maxstol && distprawy > maxstol) // pojazd wykrył prawą krawędź stołu
           {
-            Serial.printf("Prawa krawedz. \n "); //słuzy do wyprostowania kół pojazdu
-            jazdablok(-130, 300);
-            skret(300, 300); //skret w lewo
-            sys.delay(300);
-            jazda(300, 600);
-            sys.delay(1000);
-            sys.delay(500);
+            Serial.printf("Prawa krawedz 50%. \n "); //instrukcja do sprawdzenia czy na pewno nie znajdujemy się nad krawędzia stołu
+            hMot1.setPower(200);
+            sys.delay(200);
+            if (distlewy > maxstol) {
+              Serial.printf("Prawa krawedz cofamy \n ");
+              hMot1.setPower(-200);
+              sys.delay(600);
+              hMot1.setPower(0);
+            } else {
+
+              if (brakskretu > 0) {
+                Serial.printf("Prawa krawedz. \n "); //słuzy do wyprostowania kół pojazdu
+
+                hMot2.rotAbs(-200, 500, true);
+                hMot1.setPower(200);
+                sys.delay(700);
+                hMot1.setPower(0);
+                hMot2.rotAbs(0, 500, false);
+                distprawy = sensprawy.getDistance();
+                distlewy = senslewy.getDistance();
+                brakskretu = 0;
+              } else {
+                skrettak -= 30;
+                if (skrettak < -130) {
+                  skrettak = -130;
+                }
+                Serial.printf("Prawa krawedz. \n "); //słuzy do wyprostowania kół pojazdu
+                hMot1.setPower(0);
+                hMot2.rotAbs(skrettak, 500, true);
+                hMot1.setPower(200);
+                sys.delay(700);
+                hMot1.setPower(0);
+                distprawy = sensprawy.getDistance();
+                distlewy = senslewy.getDistance();
+              }
+            }
           }
 
           if (distlewy > maxstol && distprawy < maxstol) // pojazd wykrył lewą krawędź stołu
           {
-
-            Serial.printf("Lewa krawedz \n");
-            jazdablok(-130, 300);
-            skret(-300, 300); //skret w lewo
-            sys.delay(300);
-            jazda(300, 600);
-            sys.delay(1000);
-            sys.delay(500);
+            hMot1.setPower(200);
+            sys.delay(200);
+            if (distprawy > maxstol) {
+              hMot1.setPower(-200);
+              sys.delay(600);
+              hMot1.setPower(0);
+            } else {
+              if (brakskretu > 0) {
+                hMot2.rotAbs(200, 500, true);
+                hMot1.setPower(200);
+                sys.delay(700);
+                hMot1.setPower(0);
+                hMot2.rotAbs(0, 500, false);
+                distprawy = sensprawy.getDistance();
+                distlewy = senslewy.getDistance();
+                brakskretu = 0;
+              } else
+                skrettak += 30;
+              if (skrettak > 130) {
+                skrettak = 130;
+              }
+              Serial.printf("Lewa krawedz \n");
+              hMot1.setPower(0);
+              hMot2.rotAbs(skrettak, 500, true);
+              hMot1.setPower(200);
+              sys.delay(700);
+              hMot1.setPower(0);
+              distprawy = sensprawy.getDistance();
+              distlewy = senslewy.getDistance();
+            }
           }
 
           if (distlewy > maxstol && distprawy > maxstol) {
             Serial.printf("Wykryto krawędź stołu.\n ");
-            przesuwanie(dlugoscmostu, 400); //sprawdzic jaka ilosc przesuwa cały most;
+            distmost = sensmost.getDistance();
+            przesuwanie(dlugoscmostu, 800); //sprawdzic jaka ilosc przesuwa cały most;
             sys.delay(1000);
           }
         }
@@ -147,6 +227,15 @@ void hMain() {
     sys.setLogDev( & Serial); // setting USB-serial as a default printf output
     hExt.serial.init(9600, Parity::None, StopBits::One);
     for (;;) {
+      DistanceSensor sensprawy(hSens5);
+      DistanceSensor senslewy(hSens1);
+      DistanceSensor sensmost(hSens3);
+      int distprawy = sensprawy.getDistance();
+      int distlewy = senslewy.getDistance();
+      int distmost = sensmost.getDistance();
+      Serial.printf("Prawy:%d\r\n", distprawy);
+      Serial.printf("Lewy:%d\r\n", distlewy);
+      Serial.printf("Most:%d\r\n", distmost);
       bool state1 = hBtn1.isPressed();
       Serial.printf("%d\n", state3);
       if (state1 == true) {
@@ -164,19 +253,19 @@ void hMain() {
         {
         case 'w': //jazda prosto
           Serial.printf("Jazda prosto\r\n");
-          hMot1.setPower(800);
+          hMot1.setPower(500);
           break;
         case 's': //jazda do tyłu
           Serial.printf("Jazda do tyłu\r\n");
-          hMot1.setPower(-800);
+          hMot1.setPower(-500);
           break;
         case 'a': //jazda w lewo
           Serial.printf("Jazda w lewo\r\n");
-          hMot2.rotAbs(200, 500);
+          hMot2.rotAbs(-100, 500);
           break;
         case 'd': //jazda w prawo
           Serial.printf("Jazda w prawo\r\n");
-          hMot2.rotAbs(-200, 500);
+          hMot2.rotAbs(100, 500);
           break;
         case 'g': //koła prosto
           Serial.printf("Koła prosto\r\n");
