@@ -12,6 +12,7 @@ using namespace hModules;
 // Czujnik lewy - senslewy(hSens5);
 DistanceSensor sensprawy(hSens1);
 DistanceSensor senslewy(hSens5);
+DistanceSensor sensmost(hSens3);
 bool state2 = 0;
 int state3 = 0;
 int distprawy = 1;
@@ -40,33 +41,30 @@ void podnoszenie(int ilosc, int moc) {
 }
 void przesuwanie(int ilosc, int moc) {
   Serial.printf("Wysuwanie mostu.\n");
-  hMot4.rotRel(dlugoscmostu, 300, true, INFINITE); //sprawdzic czy dlugosc calego mostu jest osiagnieta
+  hMot4.rotRel((dlugoscmostu/2), 900, true, INFINITE); //sprawdzic czy dlugosc calego mostu jest osiagnieta
   Serial.printf("Koniec wysuwania mostu\n");
   Serial.printf("Sprawdzamy, czy wykryto stół.\n");
-  DistanceSensor sensprawy(hSens1);
-  DistanceSensor senslewy(hSens5);
-  int distprawy = sensprawy.getDistance();
-  int distlewy = senslewy.getDistance();
-  Serial.printf("Prawy:%d\r\n", distprawy);
-  Serial.printf("Lewy:%d\r\n", distlewy);
-  if (distlewy < maxstolmost && distprawy < maxstolmost) {
+  DistanceSensor sensmost(hSens3);
+  int distmost = sensmost.getDistance();
+  Serial.printf("Dystans:%d\r\n", distmost);
+  if (distlewy < maxstolmost) {
     Serial.printf("Wykryto stół.\n");
     Serial.printf("Podnosimy pojazd.\n");
-    hMot3.rotRel(300, 300, true);
+    hMot3.rotRel(1000, 800, true);
     Serial.printf("Pojazd podniesiony.\n");
     Serial.printf("Przejazd pojazdu po moście.\n");
-    hMot4.rotRel((-(dlugoscmostu)), 300, true, INFINITE); //przejazd pojazdu po moscie
+    hMot4.rotRel((-(dlugoscmostu)), 800, true, INFINITE); //przejazd pojazdu po moscie
     Serial.printf("Pojazd przejechał po moście.\n");
     Serial.printf("Opuszczanie pojazdu.\n");
-    hMot3.rotRel(-300, 300, true);
+    hMot3.rotRel(-1000, 300, true);
     Serial.printf("Przeciąganie mostu.\n");
-    hMot4.rotRel(((-dlugoscmostu) / 2), 300, true, INFINITE);
+    hMot4.rotRel(((-dlugoscmostu) / 2), 800, true, INFINITE);
 
   } else //nie wykryto stołu, cofamy most
   {
     Serial.printf("Nie wykryto stołu.\n");
     Serial.printf("Przeciąganie mostu.\n");
-    hMot4.rotRel((-(dlugoscmostu)), 300, true, INFINITE);
+    hMot4.rotRel((-(dlugoscmostu)), 900, true, INFINITE);
     Serial.printf("KONIEC PROCEDURY.\n");
 
     exit(1); //pojazd pozostaje w spoczynku
@@ -78,14 +76,11 @@ void hMain() {
     bool state1 = hBtn1.isPressed();
     Serial.printf("%d/n", state1);
     if (state1 == true) {
-      Serial.printf("Tutaj doszło\n");
       state3 += 1;
     }
 
     if (state3 > 0) {
       {
-        Serial.printf("Tutaj doszło\n");
-        Serial.printf("Tutaj doszło\n");
 
         for (;;) {
           printf("Start!\n");
